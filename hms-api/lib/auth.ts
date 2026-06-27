@@ -4,7 +4,7 @@ import { twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 
 import prisma from "@/lib/prisma";
-import { sendOtpEmail } from "@/lib/email";
+import { sendOtpEmail, sendPasswordResetEmail } from "@/lib/email";
 
 export const auth = betterAuth({
   appName: "HMS Hotel",
@@ -14,6 +14,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendPasswordResetEmail(user.email, url);
+    },
   },
   plugins: [
     nextCookies(),
