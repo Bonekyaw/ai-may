@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -92,7 +92,7 @@ export function LoginForm() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>("credentials");
   const [isPending, startTransition] = useTransition();
-  const otpSentRef = useRef(false);
+  const [isSendingOtp, startSendOtpTransition] = useTransition();
 
   const loginForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -111,26 +111,23 @@ export function LoginForm() {
 
   const emailValue = loginForm.watch("email");
 
-  useEffect(() => {
-    if (step !== "otp" || otpSentRef.current) {
-      return;
-    }
+  function sendVerificationCode() {
+    startSendOtpTransition(async () => {
+      const { error } = await authClient.twoFactor.sendOtp();
 
-    otpSentRef.current = true;
-
-    void authClient.twoFactor.sendOtp().then(({ error }) => {
       if (error) {
         toast.error(error.message ?? "Failed to send verification code.");
-        otpSentRef.current = false;
         return;
       }
 
       toast.success("Verification code sent to your email.");
     });
-  }, [step]);
+  }
 
   function onLoginSubmit(values: LoginInput) {
     startTransition(async () => {
+      let requiresTwoFactor = false;
+
       const { error } = await authClient.signIn.email(
         {
           email: values.email,
@@ -140,6 +137,7 @@ export function LoginForm() {
         {
           onSuccess(context) {
             if (context.data.twoFactorRedirect) {
+              requiresTwoFactor = true;
               setStep("otp");
             } else {
               router.push("/dashboard");
@@ -151,6 +149,18 @@ export function LoginForm() {
 
       if (error) {
         toast.error(error.message ?? "Invalid email or password.");
+        return;
+      }
+
+      if (requiresTwoFactor) {
+        const { error: otpError } = await authClient.twoFactor.sendOtp();
+
+        if (otpError) {
+          toast.error(otpError.message ?? "Failed to send verification code.");
+          return;
+        }
+
+        toast.success("Verification code sent to your email.");
       }
     });
   }
@@ -172,15 +182,7 @@ export function LoginForm() {
   }
 
   function handleResendCode() {
-    otpSentRef.current = false;
-    void authClient.twoFactor.sendOtp().then(({ error }) => {
-      if (error) {
-        toast.error(error.message ?? "Failed to resend code.");
-        return;
-      }
-      otpSentRef.current = true;
-      toast.success("Verification code resent.");
-    });
+    sendVerificationCode();
   }
 
   return (
@@ -255,7 +257,6 @@ export function LoginForm() {
               size="sm"
               disabled={isPending}
               onClick={() => {
-                otpSentRef.current = false;
                 otpForm.reset();
                 setStep("credentials");
               }}
@@ -267,7 +268,7 @@ export function LoginForm() {
               type="button"
               variant="link"
               size="sm"
-              disabled={isPending}
+              disabled={isPending || isSendingOtp}
               onClick={handleResendCode}
               className="px-0"
             >

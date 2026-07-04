@@ -1,11 +1,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { DashboardShell } from "@/components/dashboard-shell";
 import { getStaffProfile } from "@/lib/auth/staff-access";
 import { auth } from "@/lib/auth";
 
-export default async function DashboardLayout({
+export default async function StaffLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -19,12 +18,10 @@ export default async function DashboardLayout({
   }
 
   const staffProfile = await getStaffProfile(session.user.id);
-  const isAdmin =
-    staffProfile?.role === "ADMIN" && staffProfile.isActive === true;
 
-  return (
-    <DashboardShell user={session.user} isAdmin={isAdmin}>
-      {children}
-    </DashboardShell>
-  );
+  if (!staffProfile || staffProfile.role !== "ADMIN" || !staffProfile.isActive) {
+    redirect("/dashboard");
+  }
+
+  return children;
 }

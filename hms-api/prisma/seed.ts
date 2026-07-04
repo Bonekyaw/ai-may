@@ -1,29 +1,16 @@
 import "dotenv/config";
 
-import { generateId } from "@better-auth/core/utils/id";
-import { hashPassword } from "better-auth/crypto";
-
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { auth } from "../lib/auth";
+
+import { createStaffUser } from "../lib/services/staff-users";
+import { enableStaffTwoFactor } from "../lib/services/staff-two-factor";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
 
 const prisma = new PrismaClient({ adapter });
-
-function getCookieHeader(setCookie: string | null) {
-  if (!setCookie) {
-    return "";
-  }
-
-  return setCookie
-    .split(/,(?=\s*[^;]+=[^;]+)/)
-    .map((cookie) => cookie.split(";")[0]?.trim())
-    .filter(Boolean)
-    .join("; ");
-}
 
 async function seedAdminUser() {
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@hmshotel.com";
@@ -39,78 +26,35 @@ async function seedAdminUser() {
     return;
   }
 
-  let userId = existingUser?.id;
-
   if (!existingUser) {
-    const userIdGenerated = generateId();
-    const passwordHash = await hashPassword(adminPassword);
-
-    const user = await prisma.user.create({
-      data: {
-        id: userIdGenerated,
-        name: "HMS Admin",
-        email: normalizedEmail,
-        emailVerified: true,
-      },
-    });
-
-    await prisma.account.create({
-      data: {
-        id: generateId(),
-        accountId: user.id,
-        providerId: "credential",
-        userId: user.id,
-        password: passwordHash,
-      },
-    });
-
-    userId = user.id;
-  }
-
-  if (!userId) {
-    throw new Error("Failed to resolve admin user id during seeding.");
-  }
-
-  await prisma.staffProfile.upsert({
-    where: { userId },
-    update: {
-      role: "ADMIN",
-      isActive: true,
-    },
-    create: {
-      userId,
+    await createStaffUser({
+      name: "HMS Admin",
+      email: normalizedEmail,
+      password: adminPassword,
       role: "ADMIN",
       employeeCode: "ADMIN001",
-      isActive: true,
-    },
-  });
+    });
+  } else {
+    await prisma.staffProfile.upsert({
+      where: { userId: existingUser.id },
+      update: {
+        role: "ADMIN",
+        isActive: true,
+      },
+      create: {
+        userId: existingUser.id,
+        role: "ADMIN",
+        employeeCode: "ADMIN001",
+        isActive: true,
+      },
+    });
+  }
 
   if (existingUser?.twoFactorEnabled) {
     return;
   }
 
-  const signInResponse = await auth.api.signInEmail({
-    body: {
-      email: normalizedEmail,
-      password: adminPassword,
-    },
-    asResponse: true,
-  });
-
-  if (!signInResponse.ok) {
-    throw new Error("Failed to sign in seeded admin user.");
-  }
-
-  const cookieHeader = getCookieHeader(signInResponse.headers.get("set-cookie"));
-
-  await auth.api.enableTwoFactor({
-    body: {
-      password: adminPassword,
-    },
-    headers: {
-      cookie: cookieHeader,
-    },
-  });
+  await enableStaffTwoFactor(normalizedEmail, adminPassword);
 }
 
 async function main() {

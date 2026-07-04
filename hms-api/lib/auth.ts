@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { expo } from "@better-auth/expo";
 
 import prisma from "@/lib/prisma";
 import { sendOtpEmail, sendPasswordResetEmail } from "@/lib/email";
@@ -20,7 +21,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    nextCookies(),
+    expo(),
     twoFactor({
       issuer: "HMS Hotel",
       skipVerificationOnEnable: true,
@@ -33,6 +34,7 @@ export const auth = betterAuth({
         storeOTP: "encrypted",
       },
     }),
+    nextCookies(),
   ],
 });
 
