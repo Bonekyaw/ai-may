@@ -11,9 +11,10 @@ export const Colors = {
   light: {
     text: '#000000',
     background: '#ffffff',
-    backgroundElement: '#F0F0F3',
+    backgroundElement: '#ffffff',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    border: '#E5E7EB',
   },
   dark: {
     text: '#ffffff',
@@ -24,7 +25,10 @@ export const Colors = {
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.light;
+
+/** App always uses light theme. */
+export const AppColors = Colors.light;
 
 export const Fonts = Platform.select({
   ios: {
