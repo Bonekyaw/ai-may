@@ -10,9 +10,11 @@ import { AuthHeader } from "@/components/auth/auth-header";
 import { AuthInput } from "@/components/auth/auth-input";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { useLocale } from "@/i18n/locale-context";
 import { authClient } from "@/lib/auth-client";
 
 export default function RegisterScreen() {
+  const { t } = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +32,7 @@ export default function RegisterScreen() {
     });
 
     if (signInError) {
-      setError(signInError.message ?? "Google sign-in failed.");
+      setError(signInError.message ?? t("googleSignInFailed"));
     }
 
     setGoogleLoading(false);
@@ -49,7 +51,7 @@ export default function RegisterScreen() {
     });
 
     if (signUpError) {
-      setError(signUpError.message ?? "Registration failed.");
+      setError(signUpError.message ?? t("registrationFailed"));
       setLoading(false);
       return;
     }
@@ -60,7 +62,7 @@ export default function RegisterScreen() {
     });
 
     if (otpError) {
-      setError(otpError.message ?? "Failed to send verification code.");
+      setError(otpError.message ?? t("verificationSendFailed"));
       setLoading(false);
       return;
     }
@@ -76,10 +78,7 @@ export default function RegisterScreen() {
   return (
     <AuthScreen>
       <AuthCard>
-        <AuthHeader
-          title="Create your account"
-          subtitle="Register with Google or your email address"
-        />
+        <AuthHeader title={t("createAccount")} subtitle={t("registerSubtitle")} />
 
         {error ? (
           <Text allowFontScaling={false} style={styles.error}>
@@ -88,7 +87,7 @@ export default function RegisterScreen() {
         ) : null}
 
         <GoogleSignInButton
-          label="Continue with Google"
+          label={t("continueWithGoogle")}
           onPress={handleGoogleSignIn}
           loading={googleLoading}
           disabled={loading}
@@ -97,41 +96,41 @@ export default function RegisterScreen() {
         <AuthDivider />
 
         <AuthInput
-          label="Full name"
+          label={t("fullName")}
           value={name}
           onChangeText={setName}
           autoComplete="name"
-          placeholder="Jane Doe"
+          placeholder={t("fullNamePlaceholder")}
         />
 
         <AuthInput
-          label="Email"
+          label={t("email")}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
-          placeholder="m@example.com"
+          placeholder={t("emailPlaceholder")}
         />
 
         <AuthInput
-          label="Password"
+          label={t("password")}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder={t("passwordMinPlaceholder")}
         />
 
         <AuthButton
-          title="Create account"
+          title={t("createAccountButton")}
           onPress={handleRegister}
           loading={loading}
         />
 
         <AuthFooterLink
-          message="Already have an account?"
-          linkLabel="Sign in"
+          message={t("haveAccount")}
+          linkLabel={t("signIn")}
           onPress={() => router.push("/(auth)/login")}
         />
       </AuthCard>

@@ -1,13 +1,16 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { AppColors, Spacing } from "@/constants/theme";
+import { useLocale } from "@/i18n/locale-context";
 
 export function AuthDivider() {
+  const { t } = useLocale();
+
   return (
     <View style={styles.container}>
       <View style={styles.line} />
       <Text allowFontScaling={false} style={styles.text}>
-        Or continue with
+        {t("orContinueWith")}
       </Text>
       <View style={styles.line} />
     </View>

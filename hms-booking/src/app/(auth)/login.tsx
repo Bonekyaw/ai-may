@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 
 import { AuthButton } from "@/components/auth/auth-button";
 import { AuthCard } from "@/components/auth/auth-card";
@@ -11,9 +11,12 @@ import { AuthInput } from "@/components/auth/auth-input";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { AppColors } from "@/constants/theme";
+import { useLocale } from "@/i18n/locale-context";
 import { authClient } from "@/lib/auth-client";
+import { establishSession } from "@/lib/wait-for-session";
 
 export default function LoginScreen() {
+  const { t } = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +33,7 @@ export default function LoginScreen() {
     });
 
     if (signInError) {
-      setError(signInError.message ?? "Google sign-in failed.");
+      setError(signInError.message ?? t("googleSignInFailed"));
     }
 
     setGoogleLoading(false);
@@ -40,13 +43,13 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
 
-    const { error: signInError } = await authClient.signIn.email({
+    const { data, error: signInError } = await authClient.signIn.email({
       email: email.trim(),
       password,
     });
 
     if (signInError) {
-      const message = signInError.message ?? "Invalid email or password.";
+      const message = signInError.message ?? t("invalidCredentials");
 
       if (
         message.toLowerCase().includes("verify") ||
@@ -70,17 +73,25 @@ export default function LoginScreen() {
       return;
     }
 
-    router.replace("/(app)");
+    const ready = await establishSession(
+      data?.user
+        ? { user: data.user, token: data.token }
+        : undefined,
+    );
+
+    if (!ready) {
+      setError(t("sessionLoadFailed"));
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
   }
 
   return (
     <AuthScreen>
       <AuthCard>
-        <AuthHeader
-          title="Welcome back"
-          subtitle="Login with your Google account or email"
-        />
+        <AuthHeader title={t("welcomeBack")} subtitle={t("loginSubtitle")} />
 
         {error ? (
           <Text allowFontScaling={false} style={styles.error}>
@@ -89,6 +100,7 @@ export default function LoginScreen() {
         ) : null}
 
         <GoogleSignInButton
+          label={t("loginWithGoogle")}
           onPress={handleGoogleSignIn}
           loading={googleLoading}
           disabled={loading}
@@ -97,36 +109,36 @@ export default function LoginScreen() {
         <AuthDivider />
 
         <AuthInput
-          label="Email"
+          label={t("email")}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
-          placeholder="m@example.com"
+          placeholder={t("emailPlaceholder")}
         />
 
         <AuthInput
-          label="Password"
+          label={t("password")}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="current-password"
-          placeholder="Enter your password"
+          placeholder={t("passwordPlaceholder")}
           labelRight={
             <Pressable disabled>
               <Text allowFontScaling={false} style={styles.forgotPassword}>
-                Forgot your password?
+                {t("forgotPassword")}
               </Text>
             </Pressable>
           }
         />
 
-        <AuthButton title="Login" onPress={handleLogin} loading={loading} />
+        <AuthButton title={t("login")} onPress={handleLogin} loading={loading} />
 
         <AuthFooterLink
-          message="Don't have an account?"
-          linkLabel="Sign up"
+          message={t("noAccount")}
+          linkLabel={t("signUp")}
           onPress={() => router.push("/(auth)/register")}
         />
       </AuthCard>

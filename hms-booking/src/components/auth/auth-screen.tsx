@@ -13,6 +13,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { AuthScreenContext } from "@/components/auth/auth-screen-context";
+import { AuthLanguageToggle } from "@/components/auth/auth-language-toggle";
 import { AppColors, Spacing } from "@/constants/theme";
 
 type AuthScreenProps = {
@@ -89,6 +90,10 @@ export function AuthScreen({ children }: AuthScreenProps) {
   return (
     <AuthScreenContext.Provider value={{ scrollToInput }}>
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+        <View style={styles.topBar}>
+          <AuthLanguageToggle />
+        </View>
+
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[
@@ -120,6 +125,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: AppColors.background,
+  },
+  topBar: {
+    alignItems: "flex-end",
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.one,
   },
   scrollContent: {
     flexGrow: 1,

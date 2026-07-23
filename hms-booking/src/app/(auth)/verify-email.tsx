@@ -9,6 +9,7 @@ import { AuthInput } from "@/components/auth/auth-input";
 import { AuthScreen } from "@/components/auth/auth-screen";
 import { AppColors, Spacing } from "@/constants/theme";
 import { authClient } from "@/lib/auth-client";
+import { establishSession } from "@/lib/wait-for-session";
 
 export default function VerifyEmailScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -28,7 +29,7 @@ export default function VerifyEmailScreen() {
     setLoading(true);
     setError(null);
 
-    const { error: verifyError } = await authClient.emailOtp.verifyEmail({
+    const { data, error: verifyError } = await authClient.emailOtp.verifyEmail({
       email: normalizedEmail,
       otp: otp.trim(),
     });
@@ -39,7 +40,31 @@ export default function VerifyEmailScreen() {
       return;
     }
 
-    router.replace("/(app)");
+    const ready = await establishSession(
+      data && typeof data === "object" && "user" in data && data.user
+        ? {
+            user: data.user as {
+              id: string;
+              name: string;
+              email: string;
+              emailVerified: boolean;
+              createdAt: Date;
+              updatedAt: Date;
+            },
+            token:
+              "token" in data && typeof data.token === "string"
+                ? data.token
+                : undefined,
+          }
+        : undefined,
+    );
+
+    if (!ready) {
+      setError("Email verified, but session could not be loaded. Please sign in.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(false);
   }
 
