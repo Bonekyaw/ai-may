@@ -13,6 +13,7 @@ import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { AppColors } from "@/constants/theme";
 import { useLocale } from "@/i18n/locale-context";
 import { authClient } from "@/lib/auth-client";
+import { signInWithGoogle } from "@/lib/google-sign-in";
 import { establishSession } from "@/lib/wait-for-session";
 
 export default function LoginScreen() {
@@ -27,10 +28,7 @@ export default function LoginScreen() {
     setGoogleLoading(true);
     setError(null);
 
-    const { error: signInError } = await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/(app)",
-    });
+    const { error: signInError } = await signInWithGoogle();
 
     if (signInError) {
       setError(signInError.message ?? t("googleSignInFailed"));

@@ -1,8 +1,12 @@
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import { emailOTPClient } from "better-auth/client/plugins";
+
+// Complete pending auth sessions when the app is opened via redirect.
+WebBrowser.maybeCompleteAuthSession();
 
 const apiUrl =
   process.env.EXPO_PUBLIC_API_URL ??
@@ -56,6 +60,12 @@ export const authClient = createAuthClient({
       scheme: "hmsbooking",
       storagePrefix: "hmsbooking",
       storage: SecureStore,
+      // Keep Custom Tabs in the same Android task so the OAuth redirect is
+      // captured by openAuthSessionAsync instead of an "Open with…" chooser.
+      webBrowserOptions: {
+        createTask: false,
+        showInRecents: true,
+      },
     }),
     emailOTPClient(),
   ],
